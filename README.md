@@ -37,6 +37,34 @@ Pareto frontier).
 | `smoke_test.sh` | Fast end-to-end sanity pass on a tiny slice before committing GPU time to a full run. |
 | `figures/` | Final rendered figures used in the talk. Most are produced by `analysis/make_all_plots.py`; a couple were rendered by one-off plotting scripts not included in this snapshot. |
 
+## Score your own model (the receipt)
+
+You don't need the full pipeline to use the probes as a measuring stick.
+`score_model.py` points the two headline probes at **any** HuggingFace model
+(an off-the-shelf hub model or your own fine-tuned checkpoint) and prints a
+compact receipt: diversity entropy (did generation keep its search space?) and
+sycophancy flip rate (does it abandon a correct answer under a confident but
+wrong user?).
+
+```bash
+pip install -r requirements.txt   # or use an env that already has vllm+transformers
+
+# off-the-shelf instruct model, one GPU
+python score_model.py --model Qwen/Qwen2.5-7B-Instruct
+
+# your own fine-tuned checkpoint, compared against the base you tuned from
+python score_model.py --model /path/to/my_checkpoint --baseline Qwen/Qwen2.5-7B
+
+# fast first look (~5x fewer samples)
+python score_model.py --model Qwen/Qwen2.5-7B-Instruct --quick
+```
+
+Flags: `--no-chat` for raw base models, `--no-think` for Qwen3-style reasoning
+models, `--tp N` to shard a model too big for one GPU, `--probes d1` or `d2` to
+run just one probe. Full JSON output (per-prompt histograms, per-nudge
+confidence intervals, raw completions) lands under `results/receipt/`. The
+TruthfulQA items for the sycophancy probe download automatically on first run.
+
 ## Quickstart
 
 ```bash
