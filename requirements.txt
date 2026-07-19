@@ -1,0 +1,35 @@
+# Alignment-Tax experiments — Python dependencies.
+#
+# Pinned to a known-good mid-2026 set. If your machine's CUDA/driver forces a
+# different torch/vLLM build, change the two lines below FIRST and re-resolve;
+# everything else is tolerant to minor version drift.
+#
+# Install with:  bash env/setup.sh   (creates .venv and installs this file)
+
+# --- core DL stack (match to your machine's CUDA; see setup.sh notes) ---
+torch==2.6.0
+vllm==0.8.5
+transformers==4.51.3
+tokenizers>=0.21
+accelerate==1.6.0
+deepspeed==0.16.5
+datasets==3.5.0
+huggingface_hub>=0.30
+hf_transfer>=0.1.6
+safetensors>=0.4.5
+sentencepiece>=0.2.0
+
+# --- fine-tuning ---
+peft>=0.15
+
+# --- evaluation ---
+lm-eval==0.4.8
+
+# --- diversity / plots / utilities ---
+sacrebleu>=2.4          # self-BLEU for diversity
+matplotlib>=3.8
+pandas>=2.1
+numpy>=1.26
+scipy>=1.11
+packaging>=23.0         # version gating in run_capability.py
+tqdm>=4.66

@@ -1,0 +1,20 @@
+{
+  "comment": "Single-node ZeRO-3 for full fine-tuning a 7-8B model on 8x80GB. All",
+  "comment2": "sizing is 'auto' so HF Trainer fills it from TrainingArguments. NVLink",
+  "comment3": "only -- this config is never used across nodes.",
+  "bf16": { "enabled": "auto" },
+  "zero_optimization": {
+    "stage": 3,
+    "overlap_comm": true,
+    "contiguous_gradients": true,
+    "reduce_bucket_size": "auto",
+    "stage3_prefetch_bucket_size": "auto",
+    "stage3_param_persistence_threshold": "auto",
+    "stage3_gather_16bit_weights_on_model_save": true
+  },
+  "gradient_accumulation_steps": "auto",
+  "gradient_clipping": "auto",
+  "train_batch_size": "auto",
+  "train_micro_batch_size_per_gpu": "auto",
+  "wall_clock_breakdown": false
+}

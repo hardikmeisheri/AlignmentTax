@@ -1,0 +1,92 @@
+# Alignment-Tax experiments — NEXT-GEN dependency set (2026 models).
+#
+# WHY THIS FILE EXISTS
+# --------------------
+# The pinned requirements.txt (transformers 4.51.3 / vLLM 0.8.5) is a known-good
+# set that REPRODUCES every number already committed to the deck (OLMo-2,
+# Qwen2.5, Qwen3, Gemma-2, the Track-2 sweep). It CANNOT load any 2026-generation
+# model: Qwen3.5/3.6, Gemma-4, Llama-4, OLMo-Hybrid, Granite-4, Nemotron-3 all
+# use model_type / multimodal / hybrid-SSM architectures unknown to those libs.
+#
+# Rather than bump the pinned set in place (which would put the committed numbers
+# at reproducibility risk), the next-gen ladders run in a SEPARATE environment
+# built from this file. Two-env split:
+#   * .venv        (requirements.txt)       -> reproduces the committed results
+#   * .venv-next   (requirements-next.txt)  -> runs NEXTGEN_LADDER_KEYS only
+# Select next-gen ladders with ATAX_LADDERS=qwen35_9b,qwen36_27b,... and point
+# the run at the .venv-next interpreter.
+#
+# VERIFICATION STATUS (be honest — production discipline)
+# -------------------------------------------------------
+# VERIFIED on PyPI 2026-06-13 (these two are the whole point of the upgrade):
+#   transformers 5.12.0  — released 2026-06-12; MAJOR 4.x -> 5.x jump. Needs
+#                          Python >=3.10 and PyTorch >=2.4.
+#   vllm        0.23.0   — released 2026-06-13; advertises 200+ archs incl.
+#                          Qwen3.5 (hybrid attention / SSM), Gemma, DeepSeek-V3,
+#                          GPT-OSS, Mamba.
+# NOT independently version-resolved here: torch / deepspeed / lm-eval / trl /
+# peft / accelerate against vLLM 0.23. vLLM hard-pins a specific torch build per
+# release; installing vllm==0.23.0 will pull the torch it requires. DO NOT copy
+# the torch==2.6.0 pin from requirements.txt — let vLLM choose, then resolve the
+# rest against that torch. The versions below the two verified pins are marked
+# UNVERIFIED and must be confirmed when the env is actually built+smoke-tested.
+#
+# PER-MODEL vLLM CAVEATS (from the model cards, fetched 2026-06-13)
+# ----------------------------------------------------------------
+# * qwen35_9b : its card says "vLLM from the MAIN branch is required" — NEWER than
+#               0.23.0 stable. If the load fails, install a nightly instead:
+#                 uv pip install -U vllm --torch-backend=auto \
+#                   --extra-index-url https://wheels.vllm.ai/nightly
+#               (qwen36_27b is fine on stable: its card says vllm>=0.19.0.)
+# * gptoss_*  : the release shipped vllm==0.10.1+gptoss for the gpt_oss arch + MXFP4
+#               MoE weights. Mainline has since absorbed gpt_oss, but whether 0.23.0
+#               carries the MXFP4 kernels is UNVERIFIED — smoke-test one generate()
+#               on a single card before the run. gpt-oss ALWAYS reasons (harmony):
+#               give the short-answer probes enough max_tokens to reach the final
+#               channel (strip_reasoning() then drops the CoT).
+# * glm45_air : glm4_moe is in mainline transformers+vLLM; 0.23.0 covers it. tp=4.
+
+# === VERIFIED, REQUIRED FOR 2026 MODELS ===
+transformers==5.12.0
+vllm==0.23.0
+
+# === REQUIRED for a track1 (D1-D4) next-gen run -- FLOORS, not verified-exact.
+#     Let pip resolve these against the transformers 5.x / vLLM 0.23 that the two
+#     pins above pull, then SMOKE-TEST one capability + one calibration unit
+#     before trusting them (lm-eval especially may need a newer tag for the
+#     transformers-5 model_args surface).
+datasets>=3.0       # D3 PopQA + lm-eval task loading
+# lm-eval 0.4.8 (the pinned-.venv version) PREDATES reasoning-model support:
+# enable_thinking landed in 0.4.9, the loglikelihood guardrail in 0.4.12. On 0.4.8
+# the Qwen3/3.5/3.6 chat template runs thinking-ON, so MMLU/ARC collapse to ~random
+# (the injected <think> block pushes the answer-letter logprob off-position). 0.4.12
+# lets run_capability pass enable_thinking=False; vLLM 0.23 satisfies its >=0.18 floor.
+lm-eval==0.4.12     # reasoning-aware capability harness (enable_thinking control)
+accelerate>=1.0     # transformers device_map for the tp>1 calibration loader
+
+# === TRAINING-ONLY -- needed for the DOMAIN-SFT track (track4_domain) which
+#     fine-tunes in THIS env under torchrun + ZeRO-3. Originally left out (the
+#     env was inference-only for track1), but track4 trains here -> a missing
+#     deepspeed made all 6 domain-SFT trains die at Trainer init with
+#     ChildFailedError (exitcode 1, no real traceback in the elastic summary).
+#     FLOORS only -- let pip resolve against the torch that vllm==0.23.0 pulled;
+#     deepspeed/peft are torch-version tolerant on recent releases. If deepspeed
+#     fails to build against the new torch, install a matching prebuilt wheel.
+#     trl is NOT required (sft_domain.py uses transformers.Trainer directly).
+deepspeed>=0.14.0   # full-FT ZeRO-3 (sft_domain.py --method full -> ds_zero3.json)
+peft>=0.11.0        # LoRA path (sft_domain.py --method lora); harmless if unused
+# torch       -- DO NOT pin; installed transitively by vllm==0.23.0.
+tokenizers>=0.21
+huggingface_hub>=0.30
+hf_transfer>=0.1.6
+safetensors>=0.4.5
+sentencepiece>=0.2.0
+
+# --- diversity / plots / utilities (stack-independent; same as pinned set) ---
+sacrebleu>=2.4
+matplotlib>=3.8
+pandas>=2.1
+numpy>=1.26
+scipy>=1.11
+packaging>=23.0
+tqdm>=4.66

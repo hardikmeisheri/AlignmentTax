@@ -1,0 +1,29 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Virtualenv / tooling ---
+.venv/
+.venv-next/
+venv/
+
+# --- Generated at runtime: machine-specific, large, or reproducible ---
+# manifests/ hold absolute local paths (built by build_manifests.py); never commit.
+manifests/
+# downloaded model/dataset snapshots (can be hundreds of GB)
+assets/
+# all experiment outputs, logs, tables, checkpoints
+results/
+results_pull_*/
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
